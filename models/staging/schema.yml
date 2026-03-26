@@ -5,22 +5,79 @@ sources:
     schema: raw
     description: Raw data ingested from Bundesbank SDMX API
     tables:
+      # ---- Macro context ----
       - name: gdp
-        description: German GDP quarterly
+        description: German GDP quarterly (BBNZ1)
       - name: inflation
-        description: German HICP inflation monthly
+        description: German HICP inflation monthly (BBDP1)
       - name: ecb_mro
-        description: ECB main refinancing operations rate
+        description: ECB main refinancing operations rate (BBIN1)
       - name: ecb_lower
-        description: ECB deposit facility rate (lower bound)
+        description: ECB deposit facility rate / lower bound (BBIN1)
       - name: ecb_upper
-        description: ECB marginal lending rate (upper bound)
+        description: ECB marginal lending rate / upper bound (BBIN1)
       - name: yield_2y
-        description: Svensson 2-year yield monthly
+        description: Svensson 2-year yield monthly (BBSIS)
       - name: euribor_3m
-        description: 3-month EURIBOR monthly
+        description: 3-month EURIBOR monthly (BBIG1)
       - name: yield_10y
-        description: Svensson 10-year yield monthly
+        description: Svensson 10-year yield monthly (BBSIS)
+
+      # ---- Housing loans — rate ----
+      - name: hl_rate_total
+        description: "SUD131 – Housing loans APRC, total (new business)"
+      - name: hl_rate_float
+        description: "SUD116 – Housing loans rate, floating/≤1Y fix"
+      - name: hl_rate_1_5y
+        description: "SUD117 – Housing loans rate, >1Y–5Y fix"
+      - name: hl_rate_5_10y
+        description: "SUD118 – Housing loans rate, >5Y–10Y fix"
+      - name: hl_rate_10y
+        description: "SUD119 – Housing loans rate, >10Y fix"
+
+      # ---- Housing loans — volume ----
+      - name: hl_vol_total
+        description: "SUD231 – Housing loans volume, total (new business)"
+      - name: hl_vol_float
+        description: "SUD216 – Housing loans volume, floating/≤1Y fix"
+      - name: hl_vol_1_5y
+        description: "SUD217 – Housing loans volume, >1Y–5Y fix"
+      - name: hl_vol_5_10y
+        description: "SUD218 – Housing loans volume, >5Y–10Y fix"
+      - name: hl_vol_10y
+        description: "SUD219 – Housing loans volume, >10Y fix"
+
+      # ---- NFI loans — rate ----
+      - name: nfi_rate_total
+        description: "SUD939A – NFI loans rate, total (new business)"
+      - name: nfi_rate_sm_float
+        description: "SUD124 – NFI loans rate, ≤€1M, floating/≤1Y fix"
+      - name: nfi_rate_sm_1_5y
+        description: "SUD125 – NFI loans rate, ≤€1M, >1Y–5Y fix"
+      - name: nfi_rate_sm_5y
+        description: "SUD126 – NFI loans rate, ≤€1M, >5Y fix"
+      - name: nfi_rate_lg_float
+        description: "SUD127 – NFI loans rate, >€1M, floating/≤1Y fix"
+      - name: nfi_rate_lg_1_5y
+        description: "SUD128 – NFI loans rate, >€1M, >1Y–5Y fix"
+      - name: nfi_rate_lg_5y
+        description: "SUD129 – NFI loans rate, >€1M, >5Y fix"
+
+      # ---- NFI loans — volume ----
+      - name: nfi_vol_total
+        description: "SUD949A – NFI loans volume, total (new business)"
+      - name: nfi_vol_sm_float
+        description: "SUD224 – NFI loans volume, ≤€1M, floating/≤1Y fix"
+      - name: nfi_vol_sm_1_5y
+        description: "SUD225 – NFI loans volume, ≤€1M, >1Y–5Y fix"
+      - name: nfi_vol_sm_5y
+        description: "SUD226 – NFI loans volume, ≤€1M, >5Y fix"
+      - name: nfi_vol_lg_float
+        description: "SUD227 – NFI loans volume, >€1M, floating/≤1Y fix"
+      - name: nfi_vol_lg_1_5y
+        description: "SUD228 – NFI loans volume, >€1M, >1Y–5Y fix"
+      - name: nfi_vol_lg_5y
+        description: "SUD229 – NFI loans volume, >€1M, >5Y fix"
 
 models:
   - name: stg_bundesbank
