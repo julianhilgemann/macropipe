@@ -1,6 +1,24 @@
 # macropipe
 
-End-to-end data pipeline that fetches German macro and banking time series from the Bundesbank SDMX API, transforms them through a three-layer dbt pipeline on DuckDB, runs time series forecasting with cross-validation-based model selection, and serves the results through a PowerBI semantic model.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/DuckDB-1.2.1-FFF000?style=flat-square&logo=duckdb&logoColor=black" alt="DuckDB">
+  <img src="https://img.shields.io/badge/dbt-1.9.1-FF694B?style=flat-square&logo=dbt&logoColor=white" alt="dbt">
+  <img src="https://img.shields.io/badge/statsforecast-2.0.1-5C2D91?style=flat-square" alt="statsforecast">
+  <img src="https://img.shields.io/badge/Power_BI-TMDL%20Semantic%20Model-F2C811?style=flat-square&logo=powerbi&logoColor=black" alt="Power BI">
+  <img src="https://img.shields.io/badge/Data-Bundesbank%20SDMX%202.1-CC0000?style=flat-square" alt="Bundesbank SDMX">
+  <img src="https://img.shields.io/badge/Built%20with-Claude%20Opus-191919?style=flat-square&logo=anthropic&logoColor=white" alt="Built with Claude">
+</p>
+
+<p align="center">
+  End-to-end macro data pipeline — Bundesbank SDMX → dbt/DuckDB → time series forecasting → PowerBI semantic model
+</p>
+
+---
+
+## What it does
+
+Fetches 30 German macro and banking time series from the Bundesbank SDMX API, runs them through a three-layer dbt transformation pipeline on DuckDB, fits cross-validation-selected forecasting models on housing loan volumes, and surfaces everything through a PowerBI TMDL semantic model with 20+ DAX measures and a standalone HTML dashboard.
 
 ## Architecture
 
@@ -38,6 +56,8 @@ The PowerBI semantic model and report definition are the production target and m
 
 ![Housing Loan Forecast — 3Y view](docs/forecast_3y.png)
 
+---
+
 ## Data Sources
 
 30 Bundesbank time series from 2010 onwards, fetched via the SDMX 2.1 Generic XML API:
@@ -46,67 +66,75 @@ The PowerBI semantic model and report definition are the production target and m
 |---------|--------|--------|
 | Macro context | GDP, Inflation (HICP), ECB MRO/Deposit/Marginal rates, EURIBOR 3M, Svensson 2Y/10Y yields | BBNZ1, BBDP1, BBIN1, BBIG1, BBSIS |
 | Housing loans (households) | 5 rates (APRC total + 4 maturity buckets) + 5 volumes (total + 4 maturity buckets) | BBIM1 (SUD131, SUD116-119, SUD231, SUD216-219) |
-| NFI loans (non-financial corps) | 6 rates (total + 3 size x 2 maturity) + 6 volumes (total + 3 size x 2 maturity) | BBIM1 (SUD939A, SUD124-129, SUD949A, SUD224-229) |
+| NFI loans (non-financial corps) | 6 rates (total + 3 size × 2 maturity) + 6 volumes (total + 3 size × 2 maturity) | BBIM1 (SUD939A, SUD124-129, SUD949A, SUD224-229) |
 
-**Note:** Housing loan rate total is APRC (SUD131), not the pure interest rate (SUD131Z). APRC includes fees/costs and is a fundamentally different metric from the rate buckets, so it cannot be validated as a weighted average of the maturity sub-buckets. Volume totals are validated as the sum of their buckets.
+> **Note on APRC:** The housing loan rate total (SUD131) is APRC, not the pure interest rate. APRC includes fees/costs and cannot be validated as a weighted average of the maturity sub-buckets. Volume totals are validated as the sum of their buckets.
+
+---
 
 ## Pipeline Steps
 
-### 1. Fetch (`python/fetch.py`)
+### 1. Fetch — `python/fetch.py`
+
 - Hits the Bundesbank REST endpoint per series defined in `python/config.py`
 - Parses SDMX 2.1 Generic XML with `lxml.etree` and namespace-aware XPath
 - Stores each series as a separate table in the DuckDB `raw` schema
 
-### 2. Transform (dbt)
+### 2. Transform — dbt
 
 Three-layer dbt architecture on `dbt-duckdb`:
 
-- **Staging** (`stg_bundesbank.sql`): Unions all 30 raw tables into a single tidy format with `series_name`, `time_period`, `value`
-- **Intermediate** (`int_series_cleaned.sql`): Parses quarterly (`2023-Q1`) and monthly (`2023-01`) period strings into proper `DATE` columns, filters nulls
-- **Marts** (`fct_macro_series.sql`): BI-ready fact table that unions actuals from intermediate with forecasts from the forecast schema. Includes confidence bands for forecast rows. Uses `pre_hook` to ensure the forecast schema/table exists on first run.
+| Layer | Model | Description |
+|---|---|---|
+| Staging | `stg_bundesbank.sql` | Unions all 30 raw tables into tidy format: `series_name`, `time_period`, `value` |
+| Intermediate | `int_series_cleaned.sql` | Parses quarterly (`2023-Q1`) and monthly (`2023-01`) periods into `DATE`, filters nulls |
+| Marts | `fct_macro_series.sql` | BI-ready fact table — actuals ∪ forecasts with CI bands; `pre_hook` guards first-run schema |
 
-### 3. Forecast (`python/forecast.py`)
+### 3. Forecast — `python/forecast.py`
 
 Forecasts 5 housing loan new-business volume series (total + 4 maturity buckets):
 
-- **6 candidate models**: AutoARIMA, AutoETS, AutoTheta, AutoCES, MSTL, SeasonalNaive
-- **Expanding-window cross-validation**: `min_train=60`, `step=6`, `h=12` months
-- **Metrics**: MAE, RMSE, MAPE, SMAPE per (series, model) across all CV folds
-- **Model selection**: lowest RMSE, tie-break on MAE — per series
-- **Forecast output**: 12-month point forecast with 90% and 95% prediction intervals
-- **Storage**: `forecast.hl_vol_forecasts`, `forecast.hl_vol_cv_metrics`, `forecast.hl_vol_run_metadata`
+| Parameter | Value |
+|---|---|
+| Candidate models | AutoARIMA, AutoETS, AutoTheta, AutoCES, MSTL, SeasonalNaive |
+| CV strategy | Expanding window — `min_train=60`, `step=6`, `h=12` |
+| Metrics | MAE, RMSE, MAPE, SMAPE per (series, model) across all folds |
+| Model selection | Lowest RMSE; tie-break on MAE — per series |
+| Output | 12-month point forecast with 90% and 95% prediction intervals |
 
-### 4. Validate (`python/validate.py`)
-- Checks volume totals equal sum of maturity buckets (1% tolerance)
-- Checks NFI rate total approximates volume-weighted average of rate buckets (10 bps tolerance)
-- Documents that HL rate total (APRC) cannot be validated against rate buckets by design
+Results stored in `forecast.hl_vol_forecasts`, `forecast.hl_vol_cv_metrics`, `forecast.hl_vol_run_metadata`.
+
+### 4. Validate — `python/validate.py`
+
+- Volume totals must equal sum of maturity buckets (1% tolerance)
+- NFI rate total must approximate volume-weighted average of rate buckets (10 bps tolerance)
+- HL rate total (APRC) explicitly excluded from rate-bucket validation by design
+
+---
 
 ## PowerBI Semantic Model
 
 TMDL-based semantic model in `powerbi/macropipe.SemanticModel/`:
 
-- **Fact table** (`fct_macro_series`): Connects to DuckDB via `DuckDB.Contents()` M connector, 11 columns including CI bands
-- **Date dimension** (`synth_dim_date`): DAX-calculated table generated from `MIN/MAX(fct_macro_series[period_date])` with Year Month, Quarter, sort columns
-- **Relationship**: `fct_macro_series.period_date` → `synth_dim_date.Date` (both-directions cross-filter)
-- **Measures table** (`_Measures`): 20+ DAX measures organized in display folders:
-  - Base: `Value ACT`, `Value FCT`, `Value ACT|FCT`, CI bands
-  - Time Intelligence: YTD, QTD, Rolling 12M
-  - Comparisons: YoY/MoM absolute and percentage changes
-  - Forecast Diagnostics: `FCT vs Last ACT Δ%`
-  - Display Formatting: directional arrows, auto-format K/M/B, selected period
-- **Calculation group** (`CG - Time Intelligence`): 15 items (Current, MTD/QTD/YTD, PY variants, YoY/MoM deltas, Rolling 12M)
+| Component | Detail |
+|---|---|
+| Fact table | `fct_macro_series` — DuckDB via `DuckDB.Contents()` M connector, 11 columns incl. CI bands |
+| Date dimension | `synth_dim_date` — DAX-generated from `MIN/MAX(fct_macro_series[period_date])` |
+| Relationship | `fct_macro_series.period_date` → `synth_dim_date.Date` (both-direction cross-filter) |
+| Measures | 20+ DAX in `_Measures`: base values, CI bands, YTD/QTD/Rolling 12M, YoY/MoM, diagnostics |
+| Calculation group | `CG - Time Intelligence` — 15 items (Current, MTD/QTD/YTD, PY variants, YoY/MoM, Rolling 12M) |
 
-### Report Wireframe
-
-Three pages in `powerbi/macropipe.Report/`:
+### Report Pages
 
 | Page | Visuals |
 |------|---------|
-| **Macro Overview** | 4 KPI cards (ECB MRO, Inflation, EURIBOR 3M, 10Y Yield) + ECB rates line chart + yield curve line chart + HL APRC rates line chart + HL volume stacked bar |
-| **Housing Loan Forecast** | 4 line charts (Float, 1-5Y, 5-10Y, 10Y+) each showing ACT + FCT with 95% CI bands |
-| **Forecast Diagnostics** | Forecast summary table (series/model/value) + combined HL volume overlay with 90% CI |
+| **Macro Overview** | 4 KPI cards (ECB MRO, Inflation, EURIBOR 3M, 10Y Yield) + ECB rates line chart + yield curve + HL APRC rates + HL volume stacked bar |
+| **Housing Loan Forecast** | 4 line charts (Float, 1-5Y, 5-10Y, 10Y+) — ACT + FCT with 95% CI bands |
+| **Forecast Diagnostics** | Forecast summary table + combined HL volume overlay with 90% CI |
 
-## Setup
+---
+
+## Quick Start
 
 ```bash
 # Create virtual environment and install dependencies
@@ -115,11 +143,14 @@ make setup
 # Run the full pipeline: fetch → dbt → forecast → dbt (rebuild) → test
 make full
 
-# Or run individual steps
-make fetch
-make transform
-make forecast
-make test
+# Or step by step
+make fetch        # Pull 30 series from Bundesbank API
+make transform    # Run dbt (staging → intermediate → marts)
+make forecast     # Fit CV models, write forecasts to DuckDB
+make test         # Run dbt tests + validation checks
+
+# Serve the HTML dashboard locally
+python serve.py
 
 # Clean generated artifacts
 make clean
@@ -128,40 +159,37 @@ make clean
 ### Requirements
 
 - Python 3.10+
-- DuckDB connector for Power BI Desktop (to open the `.pbip` file)
-- Internet access for Bundesbank API
+- DuckDB connector for Power BI Desktop (to open the `.pbip`)
+- Internet access for Bundesbank SDMX API
 
 ### Dependencies
 
 ```
-duckdb==1.2.1
-dbt-duckdb==1.9.1
-pandas==2.2.3
-requests==2.32.3
-lxml==5.3.1
-statsforecast==2.0.1
+duckdb==1.2.1        dbt-duckdb==1.9.1    pandas==2.2.3
+requests==2.32.3     lxml==5.3.1          statsforecast==2.0.1
 numpy==1.26.4
 ```
+
+---
 
 ## Agentic Workflow — Cost vs. Human Benchmark
 
 This project was built in a single ~3 hour Claude Opus session (one context reset included).
-The table below compares the all-in cost against human delivery of equivalent scope.
 
-| Scenario | Cost | Calendar time |
-|---|---|---|
-| **Claude Opus API** | **~€26** | **3 hours** |
-| Senior analyst, same 3h | €184 | 3h — ~15–20% of scope delivered |
-| Senior analyst, full build | €3,660 | ~8 working days |
-| Full data team (4 roles + PM + QA) | €8,010 | 1–2 weeks |
+| Scenario | Cost | Calendar time | Notes |
+|---|---|---|---|
+| **Claude Opus API** | **~€26** | **3 hours** | Full project, complete |
+| Senior analyst (same 3h) | €184 | 3 hours | ~15–20% of scope delivered |
+| Senior analyst (full build) | €3,660 | ~8 working days | Solo, fully loaded cost |
+| Full data team (4 roles + PM + QA) | €8,010 | 1–2 weeks | Market rate engagement |
 
 **141× cheaper than a solo analyst. 308× cheaper than a full team. 20× faster.**
 
-The calculation includes fully loaded employer costs (×1.35 on gross) at European DACH market rates:
-senior data engineer €80k/year → €61/h, BI developer €75/h, data scientist €80/h.
-Token estimate: ~1.75M input + ~125k output tokens, central cost ~€26 with prompt caching.
+Rates based on fully loaded European DACH market costs (×1.35 on gross): senior data engineer €80k/year → €61/h. Token estimate: ~1.75M input + ~125k output, central cost ~€26 with prompt caching.
 
-> Full methodology, assumptions, and caveats: [COST_ANALYSIS.md](COST_ANALYSIS.md)
+> Full methodology, assumptions and caveats: [COST_ANALYSIS.md](COST_ANALYSIS.md)
+
+---
 
 ## Project Structure
 
@@ -197,7 +225,9 @@ macropipe/
 │   └── macropipe.Report/           # Report wireframe (3 pages, 14 visuals)
 │       └── definition/pages/
 ├── docs/
-│   └── forecast_3y.png            # Dashboard screenshot (Housing Loan Forecast, 3Y)
+│   └── forecast_3y.png             # Housing Loan Forecast — 3Y view
+├── COST_ANALYSIS.md                # Agentic workflow cost vs. human benchmark
+├── REFERENCE.md                    # Technical reference (connectors, DAX, M, API)
 ├── dbt_project.yml
 ├── profiles.yml
 ├── requirements.txt
