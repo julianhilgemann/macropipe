@@ -6,7 +6,6 @@ __pycache__/
 .user.yml
 
 # DuckDB
-data/*.duckdb
 data/*.wal
 
 # dbt
