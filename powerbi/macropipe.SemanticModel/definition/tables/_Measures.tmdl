@@ -5,10 +5,6 @@
 table _Measures
 	lineageTag: a1b2c3d4-0003-4000-a000-000000000001
 
-	// ═══════════════════════════════════════════════════════════════════
-	// 00 - Base Measures
-	// ═══════════════════════════════════════════════════════════════════
-
 	/// Total value across all series in the current filter context. The primary aggregation measure used by most visuals and time intelligence calculations.
 	measure 'Value ACT' =
 			CALCULATE(
@@ -97,10 +93,6 @@ table _Measures
 		displayFolder: 00 - Base Measures\Confidence Bands
 		lineageTag: a1b2c3d4-0003-4000-a000-000000000019
 
-	// ═══════════════════════════════════════════════════════════════════
-	// 01 - Time Intelligence
-	// ═══════════════════════════════════════════════════════════════════
-
 	/// Year-to-date cumulative actual value. Uses the synth_dim_date calendar for proper YTD aggregation across monthly series.
 	measure 'Value ACT YTD' =
 			TOTALYTD( [Value ACT], synth_dim_date[Date] )
@@ -124,10 +116,6 @@ table _Measures
 		formatString: #,0.0
 		displayFolder: 01 - Time Intelligence
 		lineageTag: a1b2c3d4-0003-4000-a000-000000000023
-
-	// ═══════════════════════════════════════════════════════════════════
-	// 02 - Comparisons (YoY / MoM)
-	// ═══════════════════════════════════════════════════════════════════
 
 	/// Year-over-year absolute change in the actual value. Positive = growth vs same period last year.
 	measure 'Value Δ YoY' =
@@ -179,10 +167,6 @@ table _Measures
 		displayFolder: 02 - Comparisons\MoM
 		lineageTag: a1b2c3d4-0003-4000-a000-000000000035
 
-	// ═══════════════════════════════════════════════════════════════════
-	// 03 - Forecast Diagnostics
-	// ═══════════════════════════════════════════════════════════════════
-
 	/// Forecast variance vs last actual. Compares the forecast value to the most recent actual for the same series. Use to assess directional plausibility.
 	measure 'FCT vs Last ACT Δ%' =
 			VAR _fct = [Value FCT]
@@ -196,10 +180,6 @@ table _Measures
 		formatString: +0.0%;-0.0%;0.0%
 		displayFolder: 03 - Forecast Diagnostics
 		lineageTag: a1b2c3d4-0003-4000-a000-000000000041
-
-	// ═══════════════════════════════════════════════════════════════════
-	// 99 - Display Formatting
-	// ═══════════════════════════════════════════════════════════════════
 
 	/// YoY display string with directional arrow. For card/tooltip use only.
 	measure 'Value Δ% YoY Display' =
