@@ -103,9 +103,8 @@ table fct_macro_series
 		mode: import
 		source =
 				let
-				    Source = DuckDB.Contents("data/macropipe.duckdb"),
-				    marts = Source{[Schema="main_marts"]}[Data],
-				    fct = marts{[Name="fct_macro_series"]}[Data]
+				    Source = DuckDB.Contents("data/macropipe.duckdb", "macropipe", "main_marts"),
+				    fct = Source{[Name="fct_macro_series"]}[Data]
 				in
 				    fct
 
