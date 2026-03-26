@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: int_series_cleaned
+    description: >
+      Cleaned time series with proper date parsing.
+      Quarterly periods mapped to first day of quarter.
+      Monthly periods mapped to first of month.
+    columns:
+      - name: series_name
+        tests:
+          - not_null
+      - name: period_date
+        tests:
+          - not_null
+      - name: value
+        tests:
+          - not_null

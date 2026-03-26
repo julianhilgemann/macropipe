@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.user.yml
+
+# DuckDB
+data/*.duckdb
+data/*.wal
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# PowerBI
+*.pbix
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/

@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: Raw data ingested from Bundesbank SDMX API
+    tables:
+      - name: gdp
+        description: German GDP quarterly
+      - name: inflation
+        description: German HICP inflation monthly
+      - name: ecb_mro
+        description: ECB main refinancing operations rate
+      - name: ecb_lower
+        description: ECB deposit facility rate (lower bound)
+      - name: ecb_upper
+        description: ECB marginal lending rate (upper bound)
+      - name: yield_2y
+        description: Svensson 2-year yield monthly
+      - name: euribor_3m
+        description: 3-month EURIBOR monthly
+      - name: yield_10y
+        description: Svensson 10-year yield monthly
+
+models:
+  - name: stg_bundesbank
+    description: >
+      Union of all raw Bundesbank series into tidy format.
+      Columns: series_name, time_period, value, _loaded_at.
+    columns:
+      - name: series_name
+        tests:
+          - not_null
+      - name: time_period
+        tests:
+          - not_null
+      - name: value
+        description: Observation value (may be null for missing periods)

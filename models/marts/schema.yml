@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: fct_macro_series
+    description: >
+      BI-ready fact table with all macro time series.
+      Contains actuals now; forecasts will be appended later.
+    columns:
+      - name: series_name
+        tests:
+          - not_null
+      - name: period_date
+        tests:
+          - not_null
+      - name: value
+        tests:
+          - not_null
+      - name: value_type
+        description: "'actual' or forecast model name"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['actual']

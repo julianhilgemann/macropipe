@@ -1,0 +1,7 @@
+macropipe:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/macropipe.duckdb
+      threads: 4
