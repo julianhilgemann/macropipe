@@ -143,6 +143,26 @@ statsforecast==2.0.1
 numpy==1.26.4
 ```
 
+## Agentic Workflow — Cost vs. Human Benchmark
+
+This project was built in a single ~3 hour Claude Opus session (one context reset included).
+The table below compares the all-in cost against human delivery of equivalent scope.
+
+| Scenario | Cost | Calendar time |
+|---|---|---|
+| **Claude Opus API** | **~€26** | **3 hours** |
+| Senior analyst, same 3h | €184 | 3h — ~15–20% of scope delivered |
+| Senior analyst, full build | €3,660 | ~8 working days |
+| Full data team (4 roles + PM + QA) | €8,010 | 1–2 weeks |
+
+**141× cheaper than a solo analyst. 308× cheaper than a full team. 20× faster.**
+
+The calculation includes fully loaded employer costs (×1.35 on gross) at European DACH market rates:
+senior data engineer €80k/year → €61/h, BI developer €75/h, data scientist €80/h.
+Token estimate: ~1.75M input + ~125k output tokens, central cost ~€26 with prompt caching.
+
+> Full methodology, assumptions, and caveats: [COST_ANALYSIS.md](COST_ANALYSIS.md)
+
 ## Project Structure
 
 ```
