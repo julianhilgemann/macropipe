@@ -1,4 +1,4 @@
-.PHONY: setup fetch transform test full clean
+.PHONY: setup fetch transform forecast test full clean
 
 setup:
 	python3 -m venv .venv
@@ -11,6 +11,9 @@ fetch:
 
 transform:
 	.venv/bin/python orchestrate.py transform
+
+forecast:
+	.venv/bin/python orchestrate.py forecast
 
 test:
 	.venv/bin/python orchestrate.py test

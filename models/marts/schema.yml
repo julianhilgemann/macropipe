@@ -4,7 +4,8 @@ models:
   - name: fct_macro_series
     description: >
       BI-ready fact table with all macro time series.
-      Contains actuals now; forecasts will be appended later.
+      Contains actuals from the intermediate layer and forecasts
+      (with confidence bands) from the forecast schema.
     columns:
       - name: series_name
         tests:
@@ -16,9 +17,18 @@ models:
         tests:
           - not_null
       - name: value_type
-        description: "'actual' or forecast model name"
+        description: "'actual' or 'forecast'"
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['actual']
+              values: ['actual', 'forecast']
+      - name: model_name
+        description: "Forecast model name (null for actuals)"
+      - name: ci_lower_90
+        description: "90% prediction interval lower bound"
+      - name: ci_upper_90
+        description: "90% prediction interval upper bound"
+      - name: ci_lower_95
+        description: "95% prediction interval lower bound"
+      - name: ci_upper_95
+        description: "95% prediction interval upper bound"
