@@ -683,10 +683,15 @@ fetch('data/dashboard_data.json')
   .then(r => r.json())
   .then(d => {
     DATA = d;
+    // Hash routing: #page or #page-range (e.g. #forecast-3y)
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      const [pg, range] = hash.split('-');
+      if (range) setFilter('dateRange', range);
+      if (['overview','forecast','diagnostics'].includes(pg)) showPage(pg);
+    }
     buildToolbar();
-    buildOverview();
-    buildForecast();
-    buildDiagnostics();
+    rebuildCurrentPage();
   })
   .catch(err => {
     document.body.innerHTML += `<div style="padding:32px;color:#ff6b6b">Failed to load data: ${err.message}<br>Make sure data/dashboard_data.json exists. Run: .venv/bin/python orchestrate.py full</div>`;

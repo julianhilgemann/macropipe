@@ -22,7 +22,7 @@ Bundesbank SDMX 2.1 Generic XML → DuckDB (`raw` → `staging` → `intermediat
 - **Prediction intervals**: 90% and 95% confidence levels
 - **PowerBI TMDL** (Tabular Model Definition Language) for semantic model definition in PBIP format
 - **DAX calculation groups** for time intelligence — 15 items applied to any base measure via `SELECTEDMEASURE()`
-- **DuckDB.Contents()** M connector — relative path `data/macropipe.duckdb`, schema `main_marts`
+- **DuckDB.Contents()** M connector — `DuckDB.Contents(path, database, null, null, null, [])` with `Item`/`Schema`/`Catalog` record navigation
 
 ---
 
@@ -104,7 +104,7 @@ refs: fct_macro_series, synth_dim_date, _Measures, 'CG - Time Intelligence', rel
 
 ### `fct_macro_series.tmdl`
 - 11 columns with `lineageTag`, `dataType`, `summarizeBy`
-- M partition: `DuckDB.Contents("data/macropipe.duckdb")` → `Source{[Schema="main_marts"]}[Data]` → `marts{[Name="fct_macro_series"]}[Data]`
+- M partition: `DuckDB.Contents("data/macropipe.duckdb", "abc", null, null, null, [])` → `Source{[Item="fct_macro_series", Schema="main_marts", Catalog="macropipe"]}[Data]` — the second argument is a required database parameter (value is arbitrary for single-file DuckDB), navigation uses `Item`/`Schema`/`Catalog` record fields
 
 ### `synth_dim_date.tmdl`
 - DAX calculated table from `CALENDAR(MIN(...), MAX(...))` with `ADDCOLUMNS`
@@ -156,6 +156,30 @@ crossFilteringBehavior: bothDirections
 ### Page 3: Forecast Diagnostics
 - **Table**: `fct_macro_series.series_name`, `model_name`, `Value ACT` — filtered to `value_type = 'forecast'`
 - **Line chart**: All HL volume series overlay with `Value ACT|FCT`, `CI Upper 90`, `CI Lower 90`
+
+---
+
+## HTML Dashboard (`dashboard.html`)
+
+Standalone prototype dashboard that reads `data/dashboard_data.json` (exported from `fct_macro_series`) and renders three pages mirroring the PowerBI report layout. No build tools or dependencies — pure HTML/CSS/JS with inline SVG charts.
+
+### Pages
+- **Macro Overview** — 4 KPI cards (ECB MRO, Inflation, EURIBOR 3M, 10Y Yield) + 4 line/area charts (ECB rates, yield curve, HL rates, HL volume stacked)
+- **Housing Loan Forecast** — 4 summary cards (model badge + horizon) + 4 line charts with CI bands + total HL volume chart
+- **Forecast Diagnostics** — info box with model glossary (CES/MSTL) + selected-model table with descriptions + CI-width bar chart
+
+### Interactive Filters
+- **Date range**: All / 5Y / 3Y / 1Y — pill toggles that filter all chart data
+- **CI level**: 90% / 95% — appears on Forecast + Diagnostics tabs, switches confidence band widths
+- **Hash routing**: `dashboard.html#forecast-3y` navigates directly to a page with a range preset
+
+### Technical Details
+- Charts use `<svg viewBox="...">` for responsive scaling (no fixed widths)
+- `max-width: 1440px` container centres content on wide screens
+- Three responsive breakpoints: desktop (4-col grid), tablet <1100px (2-col), mobile <700px (1-col)
+- KPI Y/Y deltas for interest-rate series display in absolute basis points (bps), non-rate series in percentage
+- Model badges are colour-coded: CES (blue `#5b9dff`), MSTL (teal `#2dd4bf`)
+- `data/dashboard_data.json` mirrors the `fct_macro_series` mart schema: `series_name`, `period_date`, `value`, `value_type`, `model_name`, `ci_lower_90/95`, `ci_upper_90/95`
 
 ---
 

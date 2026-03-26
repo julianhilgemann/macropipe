@@ -25,9 +25,18 @@ Bundesbank SDMX API
         ▼
    dbt marts rebuild       ← unions actuals + forecasts into fct_macro_series
         │
-        ▼
-   PowerBI (.pbip)         ← TMDL semantic model + 3-page report wireframe
+        ├──▶ dashboard.html    ← standalone HTML dashboard (prototype / first draft)
+        │
+        └──▶ PowerBI (.pbip)   ← TMDL semantic model + report (production target)
 ```
+
+## HTML Dashboard (Prototype)
+
+A self-contained HTML dashboard (`dashboard.html`) serves as the first-draft wireframe for the project. It reads `data/dashboard_data.json` directly and renders three pages — Macro Overview, Housing Loan Forecast, and Forecast Diagnostics — with interactive filters (date range, CI level). No build step or dependencies required; open in any browser while serving the repo directory.
+
+The PowerBI semantic model and report definition are the production target and mirror the same three-page layout with full DAX time intelligence and calculation groups.
+
+![Housing Loan Forecast — 3Y view](docs/forecast_3y.png)
 
 ## Data Sources
 
@@ -139,6 +148,10 @@ numpy==1.26.4
 ```
 macropipe/
 ├── orchestrate.py              # CLI pipeline orchestrator (fetch|transform|forecast|test|full)
+├── dashboard.html              # Standalone HTML dashboard (prototype wireframe)
+├── data/
+│   ├── macropipe.duckdb        # DuckDB analytical warehouse
+│   └── dashboard_data.json     # JSON export for the HTML dashboard
 ├── python/
 │   ├── config.py               # Series registry (30 series) + DB path config
 │   ├── fetch.py                # Bundesbank SDMX fetcher + DuckDB raw storage
@@ -163,6 +176,8 @@ macropipe/
 │   │       └── relationships/      # rel_fct_date
 │   └── macropipe.Report/           # Report wireframe (3 pages, 14 visuals)
 │       └── definition/pages/
+├── docs/
+│   └── forecast_3y.png            # Dashboard screenshot (Housing Loan Forecast, 3Y)
 ├── dbt_project.yml
 ├── profiles.yml
 ├── requirements.txt
