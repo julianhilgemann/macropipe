@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "macropipe"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "481c8b54-0e08-4fdf-9492-230c5df27a6a"
+  }
+}

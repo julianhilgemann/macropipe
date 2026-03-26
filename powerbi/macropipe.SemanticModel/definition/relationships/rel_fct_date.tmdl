@@ -1,0 +1,4 @@
+relationship rel_fct_date
+	fromColumn: fct_macro_series.period_date
+	toColumn: synth_dim_date.Date
+	crossFilteringBehavior: bothDirections

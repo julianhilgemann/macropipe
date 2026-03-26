@@ -1,0 +1,276 @@
+/// Dedicated measures container table used to centrally store all model measures.
+/// Does not contain physical data.
+/// Measures are organized into display folders by business domain and calculation type.
+///
+table _Measures
+	lineageTag: a1b2c3d4-0003-4000-a000-000000000001
+
+	// ═══════════════════════════════════════════════════════════════════
+	// 00 - Base Measures
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// Total value across all series in the current filter context. The primary aggregation measure used by most visuals and time intelligence calculations.
+	measure 'Value ACT' =
+			CALCULATE(
+			    SUM( fct_macro_series[value] ),
+			    fct_macro_series[value_type] = "actual"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000011
+
+	/// Forecast value from the best CV-selected model. Returns the point estimate for forecast periods, BLANK for actuals.
+	measure 'Value FCT' =
+			CALCULATE(
+			    SUM( fct_macro_series[value] ),
+			    fct_macro_series[value_type] = "forecast"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000012
+
+	/// Combined ACT/FCT value. Shows actual where available, falls back to forecast. Use this for continuous line charts that bridge historical data into the forecast horizon.
+	measure 'Value ACT|FCT' =
+			VAR _act = [Value ACT]
+			VAR _fct = [Value FCT]
+			RETURN
+			IF( NOT ISBLANK( _act ), _act, _fct )
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000013
+
+	/// Returns "ACT" for periods with actuals, "FCT" for periods with only forecasts, BLANK otherwise. Use for conditional formatting and legend labeling.
+	measure 'Value Type Flag' =
+			IF(
+			    NOT ISBLANK( [Value ACT] ), "ACT",
+			    IF( NOT ISBLANK( [Value FCT] ), "FCT", BLANK() )
+			)
+		displayFolder: 00 - Base Measures
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000014
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Lower bound of the 90% prediction interval. Only populated for forecast periods.
+	measure 'CI Lower 90' =
+			CALCULATE(
+			    SUM( fct_macro_series[ci_lower_90] ),
+			    fct_macro_series[value_type] = "forecast"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures\Confidence Bands
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000015
+
+	/// Upper bound of the 90% prediction interval. Only populated for forecast periods.
+	measure 'CI Upper 90' =
+			CALCULATE(
+			    SUM( fct_macro_series[ci_upper_90] ),
+			    fct_macro_series[value_type] = "forecast"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures\Confidence Bands
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000016
+
+	/// Lower bound of the 95% prediction interval. Only populated for forecast periods.
+	measure 'CI Lower 95' =
+			CALCULATE(
+			    SUM( fct_macro_series[ci_lower_95] ),
+			    fct_macro_series[value_type] = "forecast"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures\Confidence Bands
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000017
+
+	/// Upper bound of the 95% prediction interval. Only populated for forecast periods.
+	measure 'CI Upper 95' =
+			CALCULATE(
+			    SUM( fct_macro_series[ci_upper_95] ),
+			    fct_macro_series[value_type] = "forecast"
+			)
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures\Confidence Bands
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000018
+
+	/// Width of the 95% prediction interval (upper minus lower). Measures forecast uncertainty — wider bands indicate less confidence.
+	measure 'CI Band Width 95' =
+			[CI Upper 95] - [CI Lower 95]
+		formatString: #,0.0
+		displayFolder: 00 - Base Measures\Confidence Bands
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000019
+
+	// ═══════════════════════════════════════════════════════════════════
+	// 01 - Time Intelligence
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// Year-to-date cumulative actual value. Uses the synth_dim_date calendar for proper YTD aggregation across monthly series.
+	measure 'Value ACT YTD' =
+			TOTALYTD( [Value ACT], synth_dim_date[Date] )
+		formatString: #,0.0
+		displayFolder: 01 - Time Intelligence
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000021
+
+	/// Quarter-to-date cumulative actual value.
+	measure 'Value ACT QTD' =
+			TOTALQTD( [Value ACT], synth_dim_date[Date] )
+		formatString: #,0.0
+		displayFolder: 01 - Time Intelligence
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000022
+
+	/// Rolling 12-month sum of actual values. Smooths seasonality for trend analysis.
+	measure 'Value ACT R12M' =
+			CALCULATE(
+			    [Value ACT],
+			    DATESINPERIOD( synth_dim_date[Date], MAX( synth_dim_date[Date] ), -12, MONTH )
+			)
+		formatString: #,0.0
+		displayFolder: 01 - Time Intelligence
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000023
+
+	// ═══════════════════════════════════════════════════════════════════
+	// 02 - Comparisons (YoY / MoM)
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// Year-over-year absolute change in the actual value. Positive = growth vs same period last year.
+	measure 'Value Δ YoY' =
+			VAR _Current = [Value ACT]
+			VAR _PY = CALCULATE( [Value ACT], SAMEPERIODLASTYEAR( synth_dim_date[Date] ) )
+			RETURN
+			IF( NOT ISBLANK( _PY ), _Current - _PY, BLANK() )
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 02 - Comparisons\YoY
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000031
+
+	/// Year-over-year percentage change in the actual value. Positive = growth vs same period last year.
+	measure 'Value Δ% YoY' =
+			VAR _Current = [Value ACT]
+			VAR _PY = CALCULATE( [Value ACT], SAMEPERIODLASTYEAR( synth_dim_date[Date] ) )
+			RETURN
+			IF( NOT ISBLANK( _PY ), DIVIDE( _Current - _PY, ABS(_PY), 0 ), BLANK() )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 02 - Comparisons\YoY
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000032
+
+	/// YTD year-over-year percentage change. Compares YTD actual to YTD of the same period last year.
+	measure 'Value YTD Δ% YoY' =
+			VAR _CurrentYTD = CALCULATE( [Value ACT], DATESYTD( synth_dim_date[Date] ) )
+			VAR _PYYTD = CALCULATE( [Value ACT], DATESYTD( synth_dim_date[Date] ), SAMEPERIODLASTYEAR( synth_dim_date[Date] ) )
+			RETURN
+			IF( NOT ISBLANK( _PYYTD ), DIVIDE( _CurrentYTD - _PYYTD, ABS(_PYYTD), 0 ), BLANK() )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 02 - Comparisons\YoY
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000033
+
+	/// Month-over-month absolute change in the actual value.
+	measure 'Value Δ MoM' =
+			VAR _Current = [Value ACT]
+			VAR _PM = CALCULATE( [Value ACT], DATEADD( synth_dim_date[Date], -1, MONTH ) )
+			RETURN
+			IF( NOT ISBLANK( _PM ), _Current - _PM, BLANK() )
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 02 - Comparisons\MoM
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000034
+
+	/// Month-over-month percentage change in the actual value.
+	measure 'Value Δ% MoM' =
+			VAR _Current = [Value ACT]
+			VAR _PM = CALCULATE( [Value ACT], DATEADD( synth_dim_date[Date], -1, MONTH ) )
+			RETURN
+			IF( NOT ISBLANK( _PM ), DIVIDE( _Current - _PM, ABS(_PM), 0 ), BLANK() )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 02 - Comparisons\MoM
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000035
+
+	// ═══════════════════════════════════════════════════════════════════
+	// 03 - Forecast Diagnostics
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// Forecast variance vs last actual. Compares the forecast value to the most recent actual for the same series. Use to assess directional plausibility.
+	measure 'FCT vs Last ACT Δ%' =
+			VAR _fct = [Value FCT]
+			VAR _lastActDate = CALCULATE( MAX( fct_macro_series[period_date] ), fct_macro_series[value_type] = "actual" )
+			VAR _lastAct = CALCULATE( [Value ACT], synth_dim_date[Date] = _lastActDate )
+			RETURN
+			IF( NOT ISBLANK( _fct ) && NOT ISBLANK( _lastAct ),
+			    DIVIDE( _fct - _lastAct, ABS(_lastAct), 0 ),
+			    BLANK()
+			)
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 03 - Forecast Diagnostics
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000041
+
+	// ═══════════════════════════════════════════════════════════════════
+	// 99 - Display Formatting
+	// ═══════════════════════════════════════════════════════════════════
+
+	/// YoY display string with directional arrow. For card/tooltip use only.
+	measure 'Value Δ% YoY Display' =
+			VAR _Value = [Value Δ% YoY]
+			RETURN
+			IF(
+			    NOT ISBLANK( _Value ),
+			    IF( _Value > 0, "▲ ", IF( _Value < 0, "▼ ", "" ) )
+			        & FORMAT( ABS( _Value ), "0.0%" ),
+			    BLANK()
+			)
+		displayFolder: 99 - Display Formatting
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000051
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// MoM display string with directional arrow. For card/tooltip use only.
+	measure 'Value Δ% MoM Display' =
+			VAR _Value = [Value Δ% MoM]
+			RETURN
+			IF(
+			    NOT ISBLANK( _Value ),
+			    IF( _Value > 0, "▲ ", IF( _Value < 0, "▼ ", "" ) )
+			        & FORMAT( ABS( _Value ), "0.0%" ),
+			    BLANK()
+			)
+		displayFolder: 99 - Display Formatting
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000052
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Auto-formatted value with K/M/B suffix. For KPI cards and header displays.
+	measure 'Value ACT AF' =
+			VAR v = [Value ACT]
+			VAR a = ABS( v )
+			VAR scale =
+			    SWITCH(
+			        TRUE(),
+			        a >= 1000000000, 1000000000,
+			        a >= 1000000,    1000000,
+			        a >= 1000,       1000,
+			        1
+			    )
+			VAR suffix =
+			    SWITCH( scale, 1000000000, "B", 1000000, "M", 1000, "K", "" )
+			VAR n = DIVIDE( v, scale )
+			RETURN
+			IF( ISBLANK( v ), BLANK(), FORMAT( n, "0.0" ) & suffix )
+		displayFolder: 99 - Display Formatting
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000053
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Displays the currently selected date range for report subtitle/footer use.
+	measure 'Selected Period' =
+			VAR MinDate = MIN( synth_dim_date[Date] )
+			VAR MaxDate = MAX( synth_dim_date[Date] )
+			RETURN
+			FORMAT( MinDate, "MMM YYYY" ) & " – " & FORMAT( MaxDate, "MMM YYYY" )
+		displayFolder: 99 - Display Formatting
+		lineageTag: a1b2c3d4-0003-4000-a000-000000000054
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WUlCKjQUA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Empty = _t]),
+				    Cleaned = Table.RemoveColumns(Source,{"Empty"})
+				in
+				    Cleaned
+
+	annotation PBI_ResultType = Table

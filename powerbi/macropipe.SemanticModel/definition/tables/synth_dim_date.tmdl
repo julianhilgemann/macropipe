@@ -1,0 +1,141 @@
+/// Synthetic date dimension generated from fct_macro_series date range.
+/// Marked as the model's official Date table for time intelligence.
+/// Covers the full span from earliest actual to latest forecast period.
+///
+table synth_dim_date
+	lineageTag: a1b2c3d4-0002-4000-a000-000000000001
+	dataCategory: Time
+
+	column Date
+		isKey
+		formatString: Short Date
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000011
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year
+		formatString: 0
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000012
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		formatString: 0
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000013
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month Name'
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000014
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month Name]
+		sortByColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month'
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000015
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year Month]
+		sortByColumn: 'Year Month Sorter'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month Sorter'
+		formatString: 0
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000016
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year Month Sorter]
+		isHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Quarter Number'
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000017
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter Number]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Quarter Year'
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000018
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter Year]
+		sortByColumn: 'Quarter Year Sorter'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Quarter Year Sorter'
+		formatString: 0
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000019
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter Year Sorter]
+		isHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Start of Month'
+		formatString: Short Date
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000020
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Start of Month]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Day
+		formatString: 0
+		lineageTag: a1b2c3d4-0002-4000-a000-000000000021
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Day]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition synth_dim_date = calculated
+		mode: import
+		source = ```
+
+				VAR MinDate =
+				    CALCULATE( MIN( fct_macro_series[period_date] ), ALL( fct_macro_series ) )
+
+				VAR MaxDate =
+				    CALCULATE( MAX( fct_macro_series[period_date] ), ALL( fct_macro_series ) )
+
+				RETURN
+				ADDCOLUMNS(
+				    CALENDAR(MinDate, MaxDate),
+				    "Year", YEAR([Date]),
+				    "Month", MONTH([Date]),
+				    "Month Name", FORMAT([Date], "MMM"),
+				    "Year Month", FORMAT([Date], "YY-MMM"),
+				    "Year Month Sorter", YEAR([Date]) * 100 + MONTH([Date]),
+				    "Quarter Number", "Q" & QUARTER([Date]),
+				    "Quarter Year", "Q" & QUARTER([Date]) & "/" & RIGHT(FORMAT(YEAR([Date]), "0000"), 2),
+				    "Quarter Year Sorter", YEAR([Date]) * 10 + QUARTER([Date]),
+				    "Start of Month", DATE(YEAR([Date]), MONTH([Date]), 1),
+				    "Day", DAY([Date])
+				)
+
+				```
+
+	annotation PBI_Id = a8af3463a4e54a79956100a7476f01f6

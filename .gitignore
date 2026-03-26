@@ -16,6 +16,7 @@ logs/
 
 # PowerBI
 *.pbix
+**/.pbi/cache.abf
 
 # OS
 .DS_Store

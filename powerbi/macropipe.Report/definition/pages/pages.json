@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+  "pageOrder": [
+    "page_macro_overview",
+    "page_hl_forecast",
+    "page_forecast_diag"
+  ],
+  "activePageName": "page_macro_overview"
+}

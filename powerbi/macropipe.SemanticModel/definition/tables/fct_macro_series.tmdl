@@ -1,0 +1,112 @@
+/// Central fact table containing all Bundesbank macro time series (actuals and forecasts).
+/// Sourced from DuckDB main_marts.fct_macro_series via the macropipe pipeline.
+/// Actuals span 2010-01 to present; forecasts extend 12 months beyond last actual.
+/// Forecast rows include 90% and 95% prediction intervals from CV-selected models.
+///
+table fct_macro_series
+	lineageTag: a1b2c3d4-0001-4000-a000-000000000001
+
+	column series_name
+		dataType: string
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000011
+		summarizeBy: none
+		sourceColumn: series_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column period_date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000012
+		summarizeBy: none
+		sourceColumn: period_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column period_label
+		dataType: string
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000013
+		summarizeBy: none
+		sourceColumn: period_label
+
+		annotation SummarizationSetBy = Automatic
+
+	column value
+		dataType: double
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000014
+		summarizeBy: sum
+		sourceColumn: value
+
+		annotation SummarizationSetBy = Automatic
+
+	column value_type
+		dataType: string
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000015
+		summarizeBy: none
+		sourceColumn: value_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column model_name
+		dataType: string
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000016
+		summarizeBy: none
+		sourceColumn: model_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column ci_lower_90
+		dataType: double
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000017
+		summarizeBy: none
+		sourceColumn: ci_lower_90
+
+		annotation SummarizationSetBy = Automatic
+
+	column ci_upper_90
+		dataType: double
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000018
+		summarizeBy: none
+		sourceColumn: ci_upper_90
+
+		annotation SummarizationSetBy = Automatic
+
+	column ci_lower_95
+		dataType: double
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000019
+		summarizeBy: none
+		sourceColumn: ci_lower_95
+
+		annotation SummarizationSetBy = Automatic
+
+	column ci_upper_95
+		dataType: double
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000020
+		summarizeBy: none
+		sourceColumn: ci_upper_95
+
+		annotation SummarizationSetBy = Automatic
+
+	column record_timestamp
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a1b2c3d4-0001-4000-a000-000000000021
+		summarizeBy: none
+		sourceColumn: record_timestamp
+		isHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_macro_series = m
+		mode: import
+		source =
+				let
+				    Source = DuckDB.Contents("data/macropipe.duckdb"),
+				    marts = Source{[Schema="main_marts"]}[Data],
+				    fct = marts{[Name="fct_macro_series"]}[Data]
+				in
+				    fct
+
+	annotation PBI_ResultType = Table
